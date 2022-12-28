@@ -34,7 +34,7 @@ class Node:
             "ID": self.__id,
             "Name": self.__name,
             "Field": self.__field,
-            "Label": self.__label
+            "Label": self.__name
         }
 
     def __eq__(self, __o: object) -> bool:

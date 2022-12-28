@@ -6,11 +6,13 @@ class NodeDef:
     __field: str
     __label: str
     __nodes: Set[Node]
+    __metaData: List[str]
 
     def __init__(self, field: str, label: str = "") -> None:
         self.__field = field
         self.__label = label
         self.__nodes = set()
+        self.__metaData = []
         pass
 
     @property
@@ -24,6 +26,10 @@ class NodeDef:
     @property
     def nodes(self) -> Set[Node]:
         return self.__nodes
+
+    def addMetaData(self, column: str):
+        self.__metaData.append(column)
+        return
 
     def createNodes(self, data: Data) -> None:
         self.__nodes.update([Node(self.__field, d, self.__label) for d in data.df[self.__field]])
