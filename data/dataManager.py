@@ -45,6 +45,10 @@ class DataManager:
 
     def removeData(self, data: Data) -> None:
         self.__data.remove(data)
+        self.__nodeDefs = set()
+        self.__edgeDefs = set()
+        self.__nodes = set()
+        self.__edges = set()
         return
 
     def addNodeDef(self, d: NodeDef) -> None:
@@ -57,7 +61,6 @@ class DataManager:
 
     def findNodeDef(self, field: str) -> Union[NodeDef, None]:
         for n in self.__nodeDefs:
-            print(f"field: {n.field}, inField: {field}")
             if n.field == field:
                 return n 
         return None
@@ -69,6 +72,16 @@ class DataManager:
     def removeEdgeDef(self, d: EdgeDef) -> None:
         self.__edgeDefs.remove(d)
         return
+
+    def findEdgeDef(self, source: str, target: str) -> Union[EdgeDef, None]:
+        sourceNode = self.findNodeDef(source)
+        targetNode = self.findNodeDef(target)
+
+        for e in self.__edgeDefs:
+            if e.source == sourceNode and e.target == targetNode:
+                return e
+
+        return None
 
     def generateData(self) -> None:
         [n.createNodes(list(self.__data)[0]) for n in self.__nodeDefs]
