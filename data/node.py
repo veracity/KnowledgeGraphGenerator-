@@ -43,5 +43,5 @@ class Node:
         return True
 
     def __hash__(self) -> int:
-        return hash(self.__id)
+        return hash(f"{self.__field}{self.__name}")
     
