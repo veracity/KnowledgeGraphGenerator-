@@ -1,5 +1,13 @@
-from gui.app import App
+import sys
+import tkinter as tk
+
+from gui.app import NetGenApp
+
+def main():
+    root = tk.Tk()
+    app = NetGenApp(root)
+    app.mainloop()
+
 
 if __name__ == "__main__":
-    app = App()
-    app.mainloop()
+    sys.exit(main())

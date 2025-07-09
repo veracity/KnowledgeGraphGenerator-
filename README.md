@@ -1,6 +1,6 @@
 # knowledge Graph Generator
 
-Knowledge Graph Generator - A way to create a node graph to visualize connections between data. The program is written in python 3.9.2 and mainly uses pandas for data management. It has a simple UI interface (currently with some bugs) that lets you define data, nodes, and edges and also generate the files. The program itself does not visualize the data, but generate the necessary files to use a visulization tool like [Gephi](https://gephi.org/).
+Knowledge Graph Generator - A way to create a node graph to visualize connections between data. The program is written in python 3.13.4 and mainly uses NetworkX and pandas as its core libaries. It has a simple UI interface that lets you define data, nodes, and edges and  generate the a network file that can be imported into different network visualization programs. The program itself does not visualize the data, but generate the necessary files to use a visulization tool like [Gephi](https://gephi.org/).
 
 ## Running the program
 
@@ -12,7 +12,7 @@ First you need to install the required libraries. To do this, run `python -m pip
 
 ## How it works
 
-The program is sectioned into 5 sections:
+The program is divided into 5 sections:
 * [Data](#data)
 * [Data settings](#data-settings)
 * [Node settings](#node-settings)
