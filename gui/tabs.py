@@ -178,7 +178,6 @@ class NodesTab(BaseTab):
         for idx, ndef in enumerate(self.app.project.node_defs):
             self.tree.insert("", tk.END, iid=str(idx), values=(ndef.name, ndef.id_column, ndef.id_prefix or "", str(ndef.metadata)))
 
-
 class NodeDefEditor(tk.Toplevel):
     def __init__(self, master, columns: list[str], ndef: NodeDef | None):
         super().__init__(master)
@@ -186,11 +185,14 @@ class NodeDefEditor(tk.Toplevel):
         self.ok_pressed = False
         self.result: NodeDef | None = None
 
+        # Variables
         self.name_var = tk.StringVar(value=ndef.name if ndef else "")
         self.id_column_var = tk.StringVar(value=ndef.id_column if ndef else "")
         self.prefix_var = tk.StringVar(value=ndef.id_prefix if ndef else "")
         self.meta_key_var = tk.StringVar()
+        self.meta_type_var = tk.StringVar(value="Column")
         self.meta_col_var = tk.StringVar()
+        self.meta_const_var = tk.StringVar()
 
         # Name
         ttk.Label(self, text="Name").pack(anchor=tk.W, padx=5)
@@ -208,9 +210,9 @@ class NodeDefEditor(tk.Toplevel):
         ttk.Label(self, text="Metadata mapping").pack(anchor=tk.W, padx=5, pady=(6, 0))
         meta_frame = ttk.Frame(self)
         meta_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=2)
-        self.meta_tree = ttk.Treeview(meta_frame, columns=("key", "column"), show="headings", height=4)
+        self.meta_tree = ttk.Treeview(meta_frame, columns=("key", "value"), show="headings", height=4)
         self.meta_tree.heading("key", text="Attribute")
-        self.meta_tree.heading("column", text="Column")
+        self.meta_tree.heading("value", text="Value")
         self.meta_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Populate if editing
@@ -223,9 +225,21 @@ class NodeDefEditor(tk.Toplevel):
         ctrl.pack(side=tk.LEFT, fill=tk.Y, padx=4)
         ttk.Label(ctrl, text="Attr:").pack(anchor=tk.W)
         ttk.Entry(ctrl, textvariable=self.meta_key_var, width=12).pack(pady=2)
-        ttk.Label(ctrl, text="Column:").pack(anchor=tk.W)
-        col_combo = ttk.Combobox(ctrl, textvariable=self.meta_col_var, values=columns, width=12)
-        col_combo.pack(pady=2)
+        ttk.Label(ctrl, text="Type:").pack(anchor=tk.W)
+        type_combo = ttk.Combobox(ctrl, textvariable=self.meta_type_var,
+                                  values=("Column", "Constant"), state="readonly", width=12)
+        type_combo.pack(pady=2)
+
+        # Column vs Constant widgets
+        self.col_combo = ttk.Combobox(ctrl, textvariable=self.meta_col_var,
+                                      values=columns, width=12)
+        self.const_entry = ttk.Entry(ctrl, textvariable=self.meta_const_var, width=12)
+        self.col_combo.pack(pady=2)
+        self.const_entry.pack_forget()
+
+        # Trace type changes
+        self.meta_type_var.trace_add("write", self._on_type_change)
+
         ttk.Button(ctrl, text="Add", command=self._add_meta).pack(pady=(6, 2))
         ttk.Button(ctrl, text="Remove", command=self._remove_meta).pack()
 
@@ -235,32 +249,136 @@ class NodeDefEditor(tk.Toplevel):
         ttk.Button(btn_bar, text="OK", command=self._on_ok).pack(side=tk.RIGHT, padx=5)
         ttk.Button(btn_bar, text="Cancel", command=self.destroy).pack(side=tk.RIGHT)
 
+    def _on_type_change(self, *_):
+        if self.meta_type_var.get() == "Column":
+            self.const_entry.pack_forget()
+            self.col_combo.pack(pady=2)
+        else:
+            self.col_combo.pack_forget()
+            self.const_entry.pack(pady=2)
+
     def _add_meta(self):
         key = self.meta_key_var.get().strip()
-        col = self.meta_col_var.get().strip()
-        if not key or not col:
+        if not key:
+            messagebox.showwarning("Invalid", "Attribute name cannot be empty.")
             return
-        self.meta_tree.insert("", tk.END, values=(key, col))
+        if self.meta_type_var.get() == "Column":
+            spec = self.meta_col_var.get().strip()
+            if not spec:
+                messagebox.showwarning("Invalid", "Select a column name.")
+                return
+        else:
+            spec = self.meta_const_var.get().strip()
+            if not spec:
+                messagebox.showwarning("Invalid", "Enter a constant value.")
+                return
+        self.meta_tree.insert("", tk.END, values=(key, spec))
+        # clear inputs
         self.meta_key_var.set("")
         self.meta_col_var.set("")
+        self.meta_const_var.set("")
 
     def _remove_meta(self):
-        sel = self.meta_tree.selection()
-        for iid in sel:
+        for iid in self.meta_tree.selection():
             self.meta_tree.delete(iid)
 
     def _on_ok(self):
         name = self.name_var.get().strip()
         id_col = self.id_column_var.get().strip()
         prefix = self.prefix_var.get().strip() or None
+        if not id_col:
+            messagebox.showwarning("Invalid", "Each node needs an ID column.")
+            return
         metadata = {self.meta_tree.item(iid, "values")[0]: self.meta_tree.item(iid, "values")[1]
                     for iid in self.meta_tree.get_children()}
-        if not id_col:
-            messagebox.showwarning("Invalid", "Each node needs a id column")
-            return
-        self.result = NodeDef(name=name, id_column=id_col, id_prefix=prefix, metadata=metadata) # type: ignore
+        self.result = NodeDef(
+            name=name, id_column=id_col, id_prefix=prefix, metadata=metadata
+        )
         self.ok_pressed = True
         self.destroy()
+
+# class NodeDefEditor(tk.Toplevel):
+#     def __init__(self, master, columns: list[str], ndef: NodeDef | None):
+#         super().__init__(master)
+#         self.title("Node Definition")
+#         self.ok_pressed = False
+#         self.result: NodeDef | None = None
+
+#         self.name_var = tk.StringVar(value=ndef.name if ndef else "")
+#         self.id_column_var = tk.StringVar(value=ndef.id_column if ndef else "")
+#         self.prefix_var = tk.StringVar(value=ndef.id_prefix if ndef else "")
+#         self.meta_key_var = tk.StringVar()
+#         self.meta_col_var = tk.StringVar()
+
+#         # Name
+#         ttk.Label(self, text="Name").pack(anchor=tk.W, padx=5)
+#         ttk.Entry(self, textvariable=self.name_var, width=40).pack(fill=tk.X, padx=5, pady=2)
+
+#         # Columns
+#         ttk.Label(self, text="ID column").pack(anchor=tk.W, padx=5)
+#         ttk.Combobox(self, textvariable=self.id_column_var, values=columns, width=40).pack(fill=tk.X, padx=5, pady=2)
+
+#         # Prefix
+#         ttk.Label(self, text="ID prefix (optional)").pack(anchor=tk.W, padx=5)
+#         ttk.Entry(self, textvariable=self.prefix_var, width=40).pack(fill=tk.X, padx=5, pady=2)
+
+#         # Metadata mapping table
+#         ttk.Label(self, text="Metadata mapping").pack(anchor=tk.W, padx=5, pady=(6, 0))
+#         meta_frame = ttk.Frame(self)
+#         meta_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=2)
+#         self.meta_tree = ttk.Treeview(meta_frame, columns=("key", "column"), show="headings", height=4)
+#         self.meta_tree.heading("key", text="Attribute")
+#         self.meta_tree.heading("column", text="Column")
+#         self.meta_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+#         # Populate if editing
+#         if ndef:
+#             for k, v in ndef.metadata.items():
+#                 self.meta_tree.insert("", tk.END, values=(k, v))
+
+#         # Controls to add mapping
+#         ctrl = ttk.Frame(meta_frame)
+#         ctrl.pack(side=tk.LEFT, fill=tk.Y, padx=4)
+#         ttk.Label(ctrl, text="Attr:").pack(anchor=tk.W)
+#         ttk.Entry(ctrl, textvariable=self.meta_key_var, width=12).pack(pady=2)
+#         ttk.Label(ctrl, text="Column:").pack(anchor=tk.W)
+#         col_combo = ttk.Combobox(ctrl, textvariable=self.meta_col_var, values=columns, width=12)
+#         col_combo.pack(pady=2)
+#         ttk.Button(ctrl, text="Add", command=self._add_meta).pack(pady=(6, 2))
+#         ttk.Button(ctrl, text="Remove", command=self._remove_meta).pack()
+
+#         # Buttons
+#         btn_bar = ttk.Frame(self)
+#         btn_bar.pack(fill=tk.X, pady=4)
+#         ttk.Button(btn_bar, text="OK", command=self._on_ok).pack(side=tk.RIGHT, padx=5)
+#         ttk.Button(btn_bar, text="Cancel", command=self.destroy).pack(side=tk.RIGHT)
+
+#     def _add_meta(self):
+#         key = self.meta_key_var.get().strip()
+#         col = self.meta_col_var.get().strip()
+#         if not key or not col:
+#             return
+#         self.meta_tree.insert("", tk.END, values=(key, col))
+#         self.meta_key_var.set("")
+#         self.meta_col_var.set("")
+
+#     def _remove_meta(self):
+#         sel = self.meta_tree.selection()
+#         for iid in sel:
+#             self.meta_tree.delete(iid)
+
+#     def _on_ok(self):
+#         name = self.name_var.get().strip()
+#         id_col = self.id_column_var.get().strip()
+#         prefix = self.prefix_var.get().strip() or None
+#         metadata = {self.meta_tree.item(iid, "values")[0]: self.meta_tree.item(iid, "values")[1]
+#                     for iid in self.meta_tree.get_children()}
+#         if not id_col:
+#             messagebox.showwarning("Invalid", "Each node needs a id column")
+#             return
+#         self.result = NodeDef(name=name, id_column=id_col, id_prefix=prefix, metadata=metadata) # type: ignore
+#         self.ok_pressed = True
+#         self.destroy()
 
 
 class EdgesTab(BaseTab):

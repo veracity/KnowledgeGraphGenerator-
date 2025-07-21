@@ -1,7 +1,7 @@
 """Convert Project + pandas tables → NetworkX graph."""
 from __future__ import annotations
 
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import Any, Dict, Optional, TYPE_CHECKING
 
 import networkx as nx
 import pandas as pd
@@ -22,6 +22,17 @@ def _node_id(row: pd.Series, ndef: NodeDef) -> str:
     if ndef.id_prefix:
         node_id = f"{ndef.id_prefix}{node_id}"
     return node_id
+
+def _resolve_attr(row: pd.Series, spec: Any) -> Any:
+    """Return the attribute value for *spec*.
+
+    * If *spec* is a string equal to a column in the row, return that
+      column's value.
+    * Otherwise return *spec* literally (constant).
+    """
+    if isinstance(spec, str) and spec in row.index:
+        return row[spec]
+    return spec
 
 def build_graph(project: "Project", sample_rows: Optional[int] = None) -> nx.Graph:
     """Generate a NetworkX Graph/DiGraph from *project*.  If *sample_rows*
@@ -60,11 +71,11 @@ def build_graph(project: "Project", sample_rows: Optional[int] = None) -> nx.Gra
                 # Add/merge nodes first (latest metadata wins)
                 for node_id, ndef in ((u, src_ndef), (v, tgt_ndef)):
                     if node_id not in G:
-                        attrs = {k: row[col] for k, col in ndef.metadata.items()}
+                        attrs = {k: _resolve_attr(row, spec) for k, spec in ndef.metadata.items()}
                         G.add_node(node_id, **attrs)
                     else:
-                        for k, col in ndef.metadata.items():
-                            G.nodes[node_id][k] = row[col]
+                        for k, spec in ndef.metadata.items():
+                            G.nodes[node_id][k] = _resolve_attr(row, spec)
 
                 # Add/merge edge
                 if G.has_edge(u, v):
