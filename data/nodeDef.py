@@ -8,9 +8,12 @@ class NodeDef:
     __nodes: Set[Node]
     __metaData: List[str]
 
-    def __init__(self, field: str, label: str = "") -> None:
+    def __init__(self, field: str, label: str = "", name: str = None, id_prefix: str = None, metadata: dict = None) -> None:
         self.__field = field
+        self.__name = name if name is not None else field
         self.__label = label
+        self.__id_prefix = id_prefix if id_prefix is not None else f"{self.__name}-"
+        self.__metadata = dict(metadata) if metadata is not None else {"role": self.__name, "Label": field}
         self.__nodes = set()
         self.__metaData = []
         pass
@@ -18,6 +21,18 @@ class NodeDef:
     @property
     def field(self) -> str:
         return self.__field
+
+    @property
+    def name(self) -> str:
+        return self.__name
+
+    @property
+    def id_prefix(self) -> str:
+        return self.__id_prefix
+
+    @property
+    def metadata(self) -> dict:
+        return self.__metadata
 
     @property
     def label(self) -> str:

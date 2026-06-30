@@ -128,4 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# custom
 /.vscode
+*.ngproj
+!*.example.ngproj
