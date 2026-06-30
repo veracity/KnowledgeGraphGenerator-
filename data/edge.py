@@ -1,4 +1,3 @@
-from numpy import isin
 from data.node import Node
 
 

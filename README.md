@@ -8,7 +8,9 @@ You have two options to run the program. Either run the executable in releases, 
 
 ### Running with python
 
-First you need to install the required libraries. To do this, run `python -m pip install -r requirements.txt`. After that you can run the program with `python main.py`.
+This project uses [uv](https://docs.astral.sh/uv/) to manage dependencies. Once you have uv installed, run `uv sync` to create a virtual environment and install the required libraries. After that you can run the program with `uv run python main.py`.
+
+> **Note:** This program also requires `tkinter`, which is part of the Python standard library on most platforms. On some Linux distributions you may need to install it separately (e.g. `sudo apt install python3-tk`).
 
 ## How it works
 
